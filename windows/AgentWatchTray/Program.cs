@@ -41,10 +41,12 @@ static class ProjectLocator
             dir = parent.FullName;
         }
 
-        // 3. Default
+        // 3. Default paths
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var def = Path.Combine(home, "Projects", "agentwatch");
         if (Directory.Exists(def)) return def;
+        var def2 = Path.Combine(home, "agentwatch");
+        if (Directory.Exists(def2)) return def2;
 
         return ""; // Caller shows error dialog
     }
