@@ -151,11 +151,12 @@ No GUI apps needed. The core functionality (hooks → watch notifications) works
 | Platform | Download | Size |
 |----------|----------|------|
 | macOS (Apple Silicon) | [AgentWatch-macOS-arm64.zip](https://github.com/dongxutang918-afk/agentwatch/releases/download/v0.8.0/AgentWatch-macOS-arm64.zip) | 42 KB |
-| Windows | *(Source only — build with `windows\build_app.ps1`)* | — |
+| Windows (x64) | [AgentWatch-Windows-x64.zip](https://github.com/dongxutang918-afk/agentwatch/releases/download/v0.8.0/AgentWatch-Windows-x64.zip) | 94 KB |
 
 After downloading, unzip and run:
 - **macOS**: Double-click `AgentWatch.app` (runs in menu bar, no Dock icon)
-- Then configure your Bark key from `● AW` → `Add / Update Bark Key...`
+- **Windows**: Double-click `AgentWatchTray.exe` (runs in system tray, bottom-right)
+- Then configure your Bark key from the app menu
 
 > ⚠️ **One-time setup**: install Claude Code hooks from CLI. Copy-paste the command below into your terminal:
 >

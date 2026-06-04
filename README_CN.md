@@ -157,11 +157,12 @@ PermissionDenied  ──▶     仅记录（不推送）
 | 平台 | 下载 | 大小 |
 |------|------|------|
 | macOS (Apple Silicon) | [AgentWatch-macOS-arm64.zip](https://github.com/dongxutang918-afk/agentwatch/releases/download/v0.8.0/AgentWatch-macOS-arm64.zip) | 42 KB |
-| Windows | *仅源码——需执行 `windows\build_app.ps1` 构建* | — |
+| Windows (x64) | [AgentWatch-Windows-x64.zip](https://github.com/dongxutang918-afk/agentwatch/releases/download/v0.8.0/AgentWatch-Windows-x64.zip) | 94 KB |
 
 下载后解压运行：
 - **macOS**：双击 `AgentWatch.app`（运行在菜单栏，无 Dock 图标）
-- 然后从 `● AW` → `Add / Update Bark Key...` 配置 Bark key
+- **Windows**：双击 `AgentWatchTray.exe`（运行在系统托盘，右下角）
+- 然后从 App 菜单中配置 Bark key
 
 > ⚠️ **一次性安装 Claude Code hooks**：打开终端，复制粘贴下面这行命令回车即可。安装后 App 和 hooks 各自独立运行——关掉 App 通知照样推送。
 >
