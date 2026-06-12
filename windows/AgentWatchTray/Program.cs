@@ -652,7 +652,8 @@ sealed class TrayApp : ApplicationContext
     private void RefreshUI(string? result = null)
     {
         if (result != null) _lastResult = result;
-        _syncCtx.Post(_ => RefreshUI_OnMain(), null);
+        _syncCtx ??= SynchronizationContext.Current;
+        _syncCtx?.Post(_ => RefreshUI_OnMain(), null);
     }
 
     private void RefreshUI_OnMain() => RebuildMenu();
