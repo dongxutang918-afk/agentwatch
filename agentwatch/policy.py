@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from agentwatch.store import increment_failure_count, reset_failure_count, load_state
+from agentwatch.store import increment_failure_count, reset_failure_count, load_state, get_away
 
 
 # Pre-compiled regex patterns for destructive keywords with word-boundary matching.
@@ -193,3 +193,103 @@ def should_send_notification(event_type: str, npolicy: dict[str, Any]) -> bool:
 
     # danger / drift / failure are silent in actionable mode.
     return False
+
+
+# ── Away mode ────────────────────────────────────────────────────────────
+
+# Event types that stay pushable even while Away mode is active — a failing
+# agent or anything needing user interaction. Extend per-config via
+# away_mode.extra_critical_events.
+CRITICAL_EVENT_TYPES: frozenset[str] = frozenset({
+    "failure",
+    "permission_required",
+    "attention_required",
+})
+
+
+def get_away_mode(config: dict[str, Any]) -> dict[str, Any]:
+    """Return the away_mode config block with defaults applied."""
+    am = config.get("away_mode", {}) or {}
+    am.setdefault("enabled", True)
+    am.setdefault("extra_critical_events", [])
+    am.setdefault("schedule", {})
+    return am
+
+
+def is_event_critical(event_type: str, config: dict[str, Any]) -> bool:
+    """True if *event_type* should bypass Away-mode suppression."""
+    if event_type in CRITICAL_EVENT_TYPES:
+        return True
+    return event_type in set(get_away_mode(config).get("extra_critical_events", []))
+
+
+def _parse_window(spec: str) -> tuple[int, int] | None:
+    """Parse a "HH:MM-HH:MM" window into (start_minute, end_minute), or None.
+
+    Returns None on any malformed input so a bad config line is silently
+    skipped rather than throwing inside a hook.
+    """
+    try:
+        start_s, end_s = spec.split("-", 1)
+        sh, sm = (int(x) for x in start_s.strip().split(":", 1))
+        eh, em = (int(x) for x in end_s.strip().split(":", 1))
+    except (ValueError, AttributeError):
+        return None
+    if not (0 <= sh < 24 and 0 <= sm < 60 and 0 <= eh < 24 and 0 <= em < 60):
+        return None
+    return sh * 60 + sm, eh * 60 + em
+
+
+def in_dnd_window(now_minute: int, windows: list[str]) -> bool:
+    """True if *now_minute* (minutes since local midnight) falls in any window.
+
+    A window whose start > end (e.g. 23:00-08:00) wraps past midnight.  A
+    zero-length window (start == end) matches nothing.  Malformed specs are
+    skipped.
+    """
+    for spec in windows or []:
+        parsed = _parse_window(spec)
+        if parsed is None:
+            continue
+        start, end = parsed
+        if start == end:
+            continue
+        if start < end:
+            if start <= now_minute < end:
+                return True
+        elif now_minute >= start or now_minute < end:  # wraps midnight
+            return True
+    return False
+
+
+def schedule_active(config: dict[str, Any], now: Any = None) -> bool:
+    """True when the away schedule is enabled and *now* is inside a DND window.
+
+    *now* is a datetime (defaults to the local current time); only its hour and
+    minute are read.  Returns False when the schedule sub-block is disabled, so
+    the schedule layer is opt-in and leaves pure-manual setups untouched.
+    """
+    sched = get_away_mode(config).get("schedule") or {}
+    if not sched.get("enabled"):
+        return False
+    if now is None:
+        from datetime import datetime
+        now = datetime.now()
+    return in_dnd_window(now.hour * 60 + now.minute, sched.get("windows", []))
+
+
+def away_suppresses(event_type: str, config: dict[str, Any]) -> bool:
+    """True when Away mode is active and *event_type* is not critical.
+
+    Away is active when manually toggled on (``get_away().active``) OR when the
+    optional schedule places *now* inside a DND window — the two compose as a
+    plain OR, so a manual ``away off`` does not lift a scheduled window.
+
+    Layered ON TOP of should_send_notification: it only ever turns a would-be
+    push into silence, never the reverse. Critical events are never suppressed.
+    """
+    if not get_away_mode(config).get("enabled", True):
+        return False
+    if not (get_away().get("active") or schedule_active(config)):
+        return False
+    return not is_event_critical(event_type, config)

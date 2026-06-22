@@ -62,6 +62,16 @@
     "notify_on_failure": false,
     "log_silent_events": true
   },
+  "away_mode": {
+    "_comment": "When you step away, run `agentwatch away on` to suppress normal pushes (task done, etc.) and `agentwatch away off` to resume. Critical events — repeated failures and interaction prompts — always push through even while away. 'enabled' is the master switch for this whole layer (set false to make `away on` a no-op); the actual on/off state is toggled at runtime via the CLI, not stored here. 'extra_critical_events' lists additional event_types that should bypass away suppression.",
+    "enabled": true,
+    "extra_critical_events": [],
+    "_comment_schedule": "Optional do-not-disturb windows that auto-suppress normal pushes during the listed hours (local time), no manual toggle needed. Composes with manual away as a plain OR — a manual `away off` does NOT lift an active scheduled window. Set schedule.enabled=false (default) for pure-manual behavior. Each window is \"HH:MM-HH:MM\"; a start later than end (e.g. 23:00-08:00) wraps past midnight.",
+    "schedule": {
+      "enabled": false,
+      "windows": ["23:00-08:00"]
+    }
+  },
   "approval_detection": {
     "enabled": true,
     "delay_seconds": 4,

@@ -100,6 +100,20 @@ def reset_failure_count() -> None:
     save_state(state)
 
 
+def set_away(active: bool) -> dict[str, Any]:
+    """Toggle Away mode on/off in persisted state; return the new away record."""
+    state = load_state()
+    away = {"active": bool(active), "since": timestamp_default()}
+    state["away"] = away
+    save_state(state)
+    return away
+
+
+def get_away() -> dict[str, Any]:
+    """Return the persisted away record ({} when never set)."""
+    return load_state().get("away", {}) or {}
+
+
 def tail_logs(n: int = 20) -> list[dict[str, Any]]:
     """Return the last *n* events from the JSONL log."""
     if not EVENTS_LOG.exists():

@@ -38,6 +38,8 @@ from agentwatch.policy import (
     evaluate_failure,
     get_notification_policy,
     should_send_notification,
+    away_suppresses,
+    schedule_active,
 )
 from agentwatch.message_builder import build_message
 from agentwatch.notifier import send_bark
@@ -45,6 +47,8 @@ from agentwatch.store import (
     append_event,
     load_state,
     save_state,
+    set_away,
+    get_away,
     tail_logs,
     EVENTS_LOG,
     add_pending_action,
@@ -241,7 +245,7 @@ def cmd_hook(event_name: str) -> None:
         msg = build_message(final_type, parsed, danger_info, drift_info, failure_info, config=config)
 
         # Decide whether to notify.
-        notified = should_send_notification(final_type, npolicy)
+        notified = should_send_notification(final_type, npolicy) and not away_suppresses(final_type, config)
 
         # Build log entry.
         log_entry = {
@@ -337,6 +341,35 @@ def cmd_task_status() -> None:
         print("[AgentWatch] No active task boundary set.")
 
 
+def cmd_away(args: argparse.Namespace) -> None:
+    """Toggle Away mode: suppress normal pushes, still deliver critical ones."""
+    action = getattr(args, "away_cmd", None) or "status"
+    if action == "on":
+        rec = set_away(True)
+        print(f"[AgentWatch] Away mode ON (since {rec['since']}).")
+        print("  Normal notifications are suppressed; critical events")
+        print("  (repeated failures, interaction prompts) still push through.")
+    elif action == "off":
+        set_away(False)
+        print("[AgentWatch] Away mode OFF — all notifications resume.")
+    else:  # status
+        away = get_away()
+        if away.get("active"):
+            print(f"[AgentWatch] Away mode is ON (since {away.get('since', '?')}).")
+        else:
+            print("[AgentWatch] Away mode is OFF.")
+        # Surface the schedule layer so a scheduled DND window isn't invisible
+        # (suppressing pushes while manual status reads OFF would be misleading).
+        config = load_config()
+        sched = config.get("away_mode", {}).get("schedule", {}) or {}
+        if sched.get("enabled"):
+            windows = ", ".join(sched.get("windows", [])) or "(none)"
+            if schedule_active(config):
+                print(f"  Scheduled DND is ACTIVE now (windows: {windows}).")
+            else:
+                print(f"  Scheduled DND configured but not active now (windows: {windows}).")
+
+
 def cmd_task_quick() -> None:
     """Interactive task boundary setup."""
     print()
@@ -410,7 +443,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     if scenario == "permission-request":
         etype = "permission_required"
         msg = build_message(etype, parsed=None, config=config)
-        notified = should_send_notification(etype, npolicy)
+        notified = should_send_notification(etype, npolicy) and not away_suppresses(etype, config)
         print(f"[AgentWatch] Simulated PermissionRequest → {etype}")
         print(f"  Title: {msg['title']}")
         print(f"  Body:")
@@ -435,7 +468,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     if scenario == "permission-denied":
         etype = "permission_denied"
         msg = build_message(etype, parsed=None, config=config)
-        notified = should_send_notification(etype, npolicy)
+        notified = should_send_notification(etype, npolicy) and not away_suppresses(etype, config)
         print(f"[AgentWatch] Simulated PermissionDenied → {etype}")
         print(f"  Title: {msg['title']}")
         print(f"  Body:")
@@ -594,7 +627,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
         }
 
     msg = build_message(event_type, parsed, danger_info, drift_info, failure_info, config=config)
-    notified = force_notify or should_send_notification(event_type, npolicy)
+    notified = force_notify or (should_send_notification(event_type, npolicy) and not away_suppresses(event_type, config))
 
     print(f"[AgentWatch] Simulated event: {scenario} → {event_type}")
     print(f"  Title: {msg['title']}")
@@ -1258,6 +1291,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_test = persona_sub.add_parser("test", help="Preview persona text without pushing")
     p_test.add_argument("event", choices=["permission", "done", "danger", "drift", "failure"])
 
+    # away
+    p_away = sub.add_parser("away", help="Toggle Away mode (suppress normal pushes, keep critical)")
+    away_sub = p_away.add_subparsers(dest="away_cmd")
+    away_sub.add_parser("on", help="Enable Away mode")
+    away_sub.add_parser("off", help="Disable Away mode")
+    away_sub.add_parser("status", help="Show Away mode status (default)")
+
     # hook
     p_hook = sub.add_parser("hook", help="Claude Code hook entry point (called by hooks)")
     p_hook.add_argument("--event", required=True, choices=["PreToolUse", "PostToolUse", "Notification", "Stop", "PermissionRequest", "PermissionDenied"])
@@ -1338,6 +1378,8 @@ def main() -> None:
             cmd_persona_test(event_map.get(args.event, args.event))
         else:
             parser.parse_args(["persona", "--help"])
+    elif args.command == "away":
+        cmd_away(args)
     elif args.command == "hook":
         cmd_hook(args.event)
     elif args.command == "task":
