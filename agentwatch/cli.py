@@ -41,6 +41,7 @@ from agentwatch.policy import (
 )
 from agentwatch.message_builder import build_message
 from agentwatch.notifier import send_bark
+from agentwatch.session_summary import summarize_session, render_summary_body
 from agentwatch.store import (
     append_event,
     load_state,
@@ -52,6 +53,7 @@ from agentwatch.store import (
     get_pending_action,
     mark_pending_notified,
     count_pending,
+    load_session_events,
 )
 from agentwatch.utils import read_stdin_json, timestamp_iso, mask_key, parse_bark_input
 
@@ -234,11 +236,23 @@ def cmd_hook(event_name: str) -> None:
             source = "hook_notification"
 
         elif category == "task_done":
+            # Clean Stop — the real "done".  When session summaries are enabled
+            # (and this session actually did something), upgrade the push to a
+            # digest of what was accomplished; otherwise fall back to the plain
+            # "任务完成" so empty Q&A turns still ping normally.
             final_type = category
             source = "hook_stop"
+            if npolicy.get("notify_on_session_summary", True):
+                sid = (raw or {}).get("session_id", "") or ""
+                if sid:
+                    summary = summarize_session(load_session_events(sid), sid)
+                    if summary.get("tool_calls", 0) > 0:
+                        final_type = "session_summary"
+                        source = "hook_stop_session_summary"
+                        extra_summary = render_summary_body(summary)
 
         # Build message.
-        msg = build_message(final_type, parsed, danger_info, drift_info, failure_info, config=config)
+        msg = build_message(final_type, parsed, danger_info, drift_info, failure_info, extra_summary=extra_summary, config=config)
 
         # Decide whether to notify.
         notified = should_send_notification(final_type, npolicy)

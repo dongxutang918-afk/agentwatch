@@ -156,6 +156,7 @@ def get_notification_policy(config: dict[str, Any]) -> dict[str, Any]:
     npolicy = config.get("notification_policy", {}) or {}
     npolicy.setdefault("mode", "actionable")
     npolicy.setdefault("notify_on_task_done", True)
+    npolicy.setdefault("notify_on_session_summary", True)
     npolicy.setdefault("notify_on_interactive_attention", True)
     npolicy.setdefault("notify_on_pretooluse", False)
     npolicy.setdefault("notify_on_danger", False)
@@ -181,6 +182,12 @@ def should_send_notification(event_type: str, npolicy: dict[str, Any]) -> bool:
     if event_type in ("info", "pretooluse", "posttooluse", "posttooluse_error",
                        "possible_permission_wait", "permission_denied"):
         return False
+
+    # Session summary (rich end-of-session digest) — mode-independent, on by
+    # default.  Clean Stop is only classified as session_summary when this is
+    # enabled, but we re-check here so the routing is explicit.
+    if event_type == "session_summary":
+        return npolicy.get("notify_on_session_summary", True)
 
     if mode == "verbose":
         return True

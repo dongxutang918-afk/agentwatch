@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from agentwatch.persona import apply_persona
+from agentwatch.persona import apply_persona, persona_summary_lead
 
 
 # Mapping from event_type to notification title and body template logic.
@@ -12,6 +12,7 @@ TITLE_MAP = {
     "permission_required": "需要权限",
     "attention_required": "Agent 需要你处理",
     "task_done": "任务完成",
+    "session_summary": "本次会话小结",
     "danger": "高风险操作",
     "drift": "可能跑偏",
     "failure": "可能卡住",
@@ -46,7 +47,17 @@ def build_message(
 
     # Apply persona overlay if configured.
     if config is not None:
-        title, body = apply_persona(event_type, title, body, config)
+        if event_type == "session_summary":
+            # The digest body is dynamic (tool counts, file names), so persona
+            # only swaps the title and prepends a one-line lead — never replaces
+            # the metric lines the way apply_persona would.
+            p_title, p_lead = persona_summary_lead(config)
+            if p_title:
+                title = p_title
+            if p_lead:
+                body = f"{p_lead}\n{body}"
+        else:
+            title, body = apply_persona(event_type, title, body, config)
 
     return {"title": title, "body": body}
 
@@ -66,6 +77,9 @@ def _build_body(
 
     if event_type == "task_done":
         return _body_done(parsed)
+
+    if event_type == "session_summary":
+        return _body_session_summary(extra_summary)
 
     if event_type == "danger":
         return _body_danger(danger_info)
@@ -128,6 +142,18 @@ def _body_done(parsed: dict[str, Any] | None) -> str:
     raw = parsed or {}
     stop_reason = raw.get("raw_event", {}).get("reason", "") or "当前步骤已结束"
     return f"Claude Code 当前步骤已结束：{stop_reason}\n风险：低\n建议：回电脑验收或给下一步指示"
+
+
+def _body_session_summary(extra_summary: str = "") -> str:
+    """Body for session_summary.
+
+    *extra_summary* is the digest already rendered by
+    :func:`agentwatch.session_summary.render_summary_body` (the metric lines plus
+    风险 / 建议).  We pass it through verbatim, with a defensive fallback.
+    """
+    return extra_summary.strip() or (
+        "本次会话已结束。\n风险：低\n建议：回电脑验收或给下一步指示"
+    )
 
 
 def _body_danger(danger_info: dict[str, Any] | None) -> str:
