@@ -119,6 +119,31 @@ def tail_logs(n: int = 20) -> list[dict[str, Any]]:
     return events
 
 
+def load_session_events(session_id: str) -> list[dict[str, Any]]:
+    """Return every logged event whose ``raw_event.session_id`` matches *session_id*.
+
+    Used to build an end-of-session summary.  The events log can hold tens of
+    thousands of lines, so we substring-prefilter on the (UUID) session_id before
+    parsing each line — a UUID can't collide with any other field's value, so the
+    cheap ``in`` check is a safe way to skip the JSON parse for non-matching rows.
+    """
+    if not session_id or not EVENTS_LOG.exists():
+        return []
+    out: list[dict[str, Any]] = []
+    with open(EVENTS_LOG, "r", encoding="utf-8") as fh:
+        for line in fh:
+            if session_id not in line:
+                continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            raw = ev.get("raw_event")
+            if isinstance(raw, dict) and raw.get("session_id") == session_id:
+                out.append(ev)
+    return out
+
+
 # ── Pending actions (approval detection) ──────────────────────────────────
 
 

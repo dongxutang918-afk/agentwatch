@@ -55,6 +55,8 @@
     "mode": "actionable",
     "_comment": "actionable = only push when user interaction is needed; verbose = push every event",
     "notify_on_task_done": true,
+    "_comment_session_summary": "When a clean Stop ends a session that actually did work, push a digest of what was accomplished (tools used, files changed, commands, duration) instead of a plain '任务完成'. Set false to fall back to the plain done notification.",
+    "notify_on_session_summary": true,
     "notify_on_interactive_attention": true,
     "notify_on_pretooluse": false,
     "notify_on_danger": false,

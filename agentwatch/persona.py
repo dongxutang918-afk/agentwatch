@@ -229,6 +229,22 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
 }
 
 
+# ── Session-summary leads ───────────────────────────────────────────────
+#
+# The session_summary digest has a DYNAMIC body (tool counts, file names) that
+# must survive the persona overlay.  So instead of replacing the whole body
+# (as PERSONAS does), each theme here supplies only a flavored *title* and a
+# one-line *lead* that gets prepended to the real digest.
+
+SUMMARY_LEADS: dict[str, dict[str, str]] = {
+    "boss":        {"title": "战报呈上",   "lead": "总裁，本回合的战况给您汇总如下："},
+    "heir_male":   {"title": "本回合小结", "lead": "少爷，这一程办了哪些事，给您理一理："},
+    "heir_female": {"title": "本回合小结", "lead": "大小姐，这一程办了哪些事，给您理一理："},
+    "emperor":     {"title": "差事汇总",   "lead": "皇上，这一程的差事，奴才给您一一回禀："},
+    "palace":      {"title": "本回合回禀", "lead": "主子，这一程的首尾，奴才给您一一回禀："},
+}
+
+
 # ── Public API ──────────────────────────────────────────────────────────
 
 
@@ -270,6 +286,25 @@ def apply_persona(
         return title, body
 
     return tpl.get("title", title), tpl.get("body", body)
+
+
+def persona_summary_lead(config: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Return (title, lead) for the session_summary digest under the active persona.
+
+    Returns (None, None) when persona is off or the theme has no summary lead.
+    Unlike :func:`apply_persona`, this never touches the digest body — the caller
+    keeps the dynamic metric lines and only swaps the title / prepends the lead.
+    """
+    pc = get_persona_config(config)
+    if not pc.get("enabled", False):
+        return None, None
+    theme = pc.get("theme", "off")
+    if theme == "off":
+        return None, None
+    tpl = SUMMARY_LEADS.get(theme)
+    if not tpl:
+        return None, None
+    return tpl.get("title"), tpl.get("lead")
 
 
 def valid_themes() -> list[str]:
