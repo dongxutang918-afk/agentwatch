@@ -55,6 +55,8 @@
     "mode": "actionable",
     "_comment": "actionable = only push when user interaction is needed; verbose = push every event",
     "notify_on_task_done": true,
+    "_comment_pending_bg": "task_done_pending_bg fires when the main turn stops while dispatched background tasks are still running; log-only by default to avoid false 'task complete' pushes. Set true to be notified anyway.",
+    "notify_on_task_done_pending_bg": false,
     "notify_on_interactive_attention": true,
     "notify_on_pretooluse": false,
     "notify_on_danger": false,

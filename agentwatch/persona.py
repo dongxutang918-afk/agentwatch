@@ -37,6 +37,10 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
             "title": "项目拿下了",
             "body": "总裁！项目成了！这一局，轮到我们赢了！\n建议：回电脑验收成果。",
         },
+        "task_done_pending_bg": {
+            "title": "主力收工，后方还在干",
+            "body": "总裁！台面上的活儿收了，可后台还有一队人在加班跑流程，这会儿别急着庆功。\n建议：等后台那摊跑完再验收。",
+        },
         "attention_required": {
             "title": "全场等您一句话",
             "body": "总裁，现在所有人都在等您拍板。\n建议：回电脑处理。",
@@ -76,6 +80,10 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
         "task_done": {
             "title": "事情办妥了",
             "body": "少爷，您吩咐的事已经办妥，请您验收。",
+        },
+        "task_done_pending_bg": {
+            "title": "主事办完，杂务未了",
+            "body": "少爷，明面上的事办妥了，可后头还有几桩杂务在办，暂未全清。\n建议：稍候，等后头办完再验收。",
         },
         "attention_required": {
             "title": "请您定夺",
@@ -117,6 +125,10 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
             "title": "事情办妥了",
             "body": "大小姐，您吩咐的事已经办妥，请您验收。",
         },
+        "task_done_pending_bg": {
+            "title": "主事办完，杂务未了",
+            "body": "大小姐，明面上的事办妥了，可后头还有几桩杂务在办，暂未全清。\n建议：稍候，等后头办完再验收。",
+        },
         "attention_required": {
             "title": "请您定夺",
             "body": "大小姐，下面的人拿不准主意，还请您回电脑定夺。",
@@ -157,6 +169,10 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
             "title": "差事办妥",
             "body": "皇上，差事已经办妥，就等您御览。",
         },
+        "task_done_pending_bg": {
+            "title": "主差办妥，余事未了",
+            "body": "皇上，主差是办妥了，可还有几桩杂事，奴才们仍在后头忙活。\n请您稍候御览。",
+        },
         "attention_required": {
             "title": "请皇上定夺",
             "body": "皇上，下面的人拿不准主意，特来请您圣裁。",
@@ -196,6 +212,10 @@ PERSONAS: dict[str, dict[str, dict[str, str]]] = {
         "task_done": {
             "title": "差事已成",
             "body": "主子吩咐的差事已经办妥，现呈上请您过目。",
+        },
+        "task_done_pending_bg": {
+            "title": "主事已成，余事未了",
+            "body": "主子，主事虽已办妥，可还有几桩首尾，奴才们仍在后头打点。\n还请主子稍候过目。",
         },
         "attention_required": {
             "title": "请主子定夺",
