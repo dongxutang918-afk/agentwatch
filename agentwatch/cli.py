@@ -40,7 +40,7 @@ from agentwatch.policy import (
     should_send_notification,
 )
 from agentwatch.message_builder import build_message
-from agentwatch.notifier import send_bark
+from agentwatch.notifier import dispatch
 from agentwatch.store import (
     append_event,
     load_state,
@@ -112,7 +112,7 @@ def cmd_test_push() -> None:
     print(f"[AgentWatch] Using bark_key: {mask_key(key)}")
     print("[AgentWatch] Sending test notification ...")
 
-    ok = send_bark("AgentWatch 测试", "如果你在 Apple Watch 上看到这条消息，说明提醒链路已打通。", nc)
+    ok = dispatch("AgentWatch 测试", "如果你在 Apple Watch 上看到这条消息，说明提醒链路已打通。", nc)
     if ok:
         print("[AgentWatch] Test notification sent. Check your iPhone / Apple Watch.")
     else:
@@ -261,7 +261,7 @@ def cmd_hook(event_name: str) -> None:
         append_event(log_entry)
 
         if notified and final_type != "info":
-            send_bark(msg["title"], msg["body"], nc)
+            dispatch(msg["title"], msg["body"], nc)
 
     except Exception as exc:
         print(f"[AgentWatch] ERROR in hook processing: {exc}", file=sys.stderr, flush=True)
@@ -426,7 +426,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
         }
         append_event(log_entry)
         if notified:
-            ok = send_bark(msg["title"], msg["body"], nc)
+            ok = dispatch(msg["title"], msg["body"], nc)
             if ok: print(f"[AgentWatch] Notification sent: {msg['title']}")
             else: print("[AgentWatch] Notification failed.")
         return
@@ -505,7 +505,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
             mark_pending_notified(action_id)
 
             if will_notify:
-                ok = send_bark(msg["title"], msg["body"], nc)
+                ok = dispatch(msg["title"], msg["body"], nc)
                 if ok:
                     print(f"[AgentWatch] Notification sent: {msg['title']}")
                 else:
@@ -618,7 +618,7 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     append_event(log_entry)
 
     if notified:
-        ok = send_bark(msg["title"], msg["body"], nc)
+        ok = dispatch(msg["title"], msg["body"], nc)
         if ok:
             print(f"[AgentWatch] Notification sent: {msg['title']}")
         else:
@@ -1016,7 +1016,7 @@ def cmd_config_test() -> None:
     print(f"[AgentWatch] Using bark_key: {mask_key(key)}")
     print("[AgentWatch] Sending test notification ...")
 
-    ok = send_bark(
+    ok = dispatch(
         "AgentWatch Bark 测试",
         "Bark Key 已配置成功。如果你在 Apple Watch 上看到这条消息，说明链路已打通。",
         nc,
@@ -1103,7 +1103,7 @@ def cmd_pending_check(args: argparse.Namespace) -> None:
     mark_pending_notified(action_id)
 
     if notified:
-        send_bark(msg["title"], msg["body"], nc)
+        dispatch(msg["title"], msg["body"], nc)
 
     raise SystemExit(0)
 

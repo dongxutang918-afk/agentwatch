@@ -1,10 +1,21 @@
 {
   "notifier": {
+    "_comment_type": "Which push backend to use: 'bark' (iPhone/Apple Watch), 'pushover', or 'ntfy'. Only the fields for the chosen type matter; the others can stay as placeholders.",
     "type": "bark",
     "bark_key": "YOUR_BARK_KEY",
     "bark_server": "https://api.day.app",
     "group": "AgentWatch",
-    "level": "timeSensitive"
+    "level": "timeSensitive",
+    "_comment_pushover": "type=pushover: create an app at pushover.net/apps for pushover_token; pushover_user is the user key on your dashboard. pushover_priority is optional (-2..2, omit/0 = normal). pushover_server only changes for self-hosted setups.",
+    "pushover_token": "YOUR_PUSHOVER_TOKEN",
+    "pushover_user": "YOUR_PUSHOVER_USER",
+    "pushover_server": "https://api.pushover.net",
+    "pushover_priority": 0,
+    "_comment_ntfy": "type=ntfy: ntfy_topic is your subscribed topic. ntfy_server defaults to public https://ntfy.sh (set your self-hosted URL otherwise). ntfy_priority 1-5 (5=max, default 4). ntfy_token only needed for protected/private topics (Bearer auth).",
+    "ntfy_topic": "YOUR_NTFY_TOPIC",
+    "ntfy_server": "https://ntfy.sh",
+    "ntfy_priority": 4,
+    "ntfy_token": "YOUR_NTFY_TOKEN"
   },
   "risk_policy": {
     "dangerous_commands": [
