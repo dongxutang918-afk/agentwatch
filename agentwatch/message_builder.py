@@ -12,6 +12,7 @@ TITLE_MAP = {
     "permission_required": "需要权限",
     "attention_required": "Agent 需要你处理",
     "task_done": "任务完成",
+    "task_done_pending_bg": "主回合结束（后台运行中）",
     "danger": "高风险操作",
     "drift": "可能跑偏",
     "failure": "可能卡住",
@@ -66,6 +67,9 @@ def _build_body(
 
     if event_type == "task_done":
         return _body_done(parsed)
+
+    if event_type == "task_done_pending_bg":
+        return _body_done_pending_bg(extra_summary)
 
     if event_type == "danger":
         return _body_danger(danger_info)
@@ -128,6 +132,16 @@ def _body_done(parsed: dict[str, Any] | None) -> str:
     raw = parsed or {}
     stop_reason = raw.get("raw_event", {}).get("reason", "") or "当前步骤已结束"
     return f"Claude Code 当前步骤已结束：{stop_reason}\n风险：低\n建议：回电脑验收或给下一步指示"
+
+
+def _body_done_pending_bg(extra_summary: str = "") -> str:
+    """Body for task_done_pending_bg — main turn ended but background work is still running."""
+    count = extra_summary.strip() or "若干"
+    return (
+        f"Claude Code 主回合已结束，但后台还有 {count} 个任务在运行，尚未真正完成。\n"
+        f"风险：低\n"
+        f"建议：后台任务跑完会再提醒，暂不用回电脑"
+    )
 
 
 def _body_danger(danger_info: dict[str, Any] | None) -> str:

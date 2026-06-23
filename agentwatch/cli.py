@@ -238,11 +238,34 @@ def cmd_hook(event_name: str) -> None:
             source = "hook_notification"
 
         elif category == "task_done":
-            final_type = category
-            source = "hook_stop"
+            # Stop fires the instant the MAIN turn ends — even while background
+            # work (background subagents / run_in_background Bash / Workflow) is
+            # still running. Reporting "任务完成" then is a false positive, so when
+            # the Stop payload lists active background tasks we downgrade to a
+            # distinct, log-only event and let the *final* clean Stop (empty
+            # background_tasks) deliver the real "完成".
+            _BG_DONE_STATES = {"completed", "complete", "done", "failed", "error",
+                               "cancelled", "canceled", "killed", "timeout", "stopped"}
+            active_bg = [
+                t for t in ((raw or {}).get("background_tasks") or [])
+                if isinstance(t, dict)
+                and str(t.get("status", "")).lower() not in _BG_DONE_STATES
+            ]
+            if active_bg:
+                final_type = "task_done_pending_bg"
+                source = "hook_stop_pending_bg"
+                extra_summary = str(len(active_bg))
+                print(
+                    f"[AgentWatch] Stop fired with {len(active_bg)} background "
+                    f"task(s) still running - not reporting done.",
+                    file=sys.stderr, flush=True,
+                )
+            else:
+                final_type = category
+                source = "hook_stop"
 
         # Build message.
-        msg = build_message(final_type, parsed, danger_info, drift_info, failure_info, config=config)
+        msg = build_message(final_type, parsed, danger_info, drift_info, failure_info, extra_summary=extra_summary, config=config)
 
         # Decide whether to notify.
         notified = should_send_notification(final_type, npolicy) and not away_suppresses(final_type, config)
@@ -813,6 +836,7 @@ def _fmt_event_row(ev: dict[str, Any]) -> str:
         "drift": "↗",
         "failure": "✗",
         "task_done": "✓",
+        "task_done_pending_bg": "⏳",
         "attention_required": "‼",
         "permission_required": "‼",
         "info": "·",
